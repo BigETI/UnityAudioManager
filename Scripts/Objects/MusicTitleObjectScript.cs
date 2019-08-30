@@ -8,7 +8,7 @@ namespace UnityAudioManager.Objects
     /// <summary>
     /// Music title object script class
     /// </summary>
-    [CreateAssetMenu(fileName = "MusicTitle", menuName = "Utils/Music title")]
+    [CreateAssetMenu(fileName = "MusicTitle", menuName = "Audio manager/Music title")]
     public class MusicTitleObjectScript : ScriptableObject
     {
         /// <summary>

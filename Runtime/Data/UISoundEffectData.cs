@@ -7,10 +7,10 @@ using UnityEngine;
 namespace UnityAudioManager.Data
 {
     /// <summary>
-    /// UI sound effect data
+    /// A class that describes UI sound effect data
     /// </summary>
     [Serializable]
-    public class UISoundEffectData
+    public class UISoundEffectData : IUISoundEffectData
     {
         /// <summary>
         /// Sound effect audio clip
@@ -27,23 +27,11 @@ namespace UnityAudioManager.Data
         /// <summary>
         /// Sound effect audio clip
         /// </summary>
-        public AudioClip SoundEffectAudioClip
-        {
-            get
-            {
-                return soundEffectAudioClip;
-            }
-        }
+        public AudioClip SoundEffectAudioClip => soundEffectAudioClip;
 
         /// <summary>
         /// Event trigger type
         /// </summary>
-        public EEventTriggerType EventTriggerType
-        {
-            get
-            {
-                return eventTriggerType;
-            }
-        }
+        public EEventTriggerType EventTriggerType => eventTriggerType;
     }
 }

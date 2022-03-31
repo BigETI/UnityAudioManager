@@ -1,5 +1,5 @@
 ﻿using System;
-using UnityAudioManager.Data;
+using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
@@ -8,9 +8,9 @@ using UnityEngine;
 namespace UnityAudioManager
 {
     /// <summary>
-    /// Audio group data class
+    /// A class that describes an audio group
     /// </summary>
-    public class AudioGroup
+    internal class AudioGroup : IAudioGroup
     {
         /// <summary>
         /// Audio sources
@@ -18,9 +18,14 @@ namespace UnityAudioManager
         private AudioSource[] audioSources;
 
         /// <summary>
+        /// Audio sources
+        /// </summary>
+        public IReadOnlyList<AudioSource> AudioSources => audioSources ?? Array.Empty<AudioSource>();
+
+        /// <summary>
         /// Current sounds index
         /// </summary>
-        private uint currentSoundsIndex;
+        public uint CurrentSoundsIndex { get; private set; }
 
         /// <summary>
         /// Is muted
@@ -28,29 +33,11 @@ namespace UnityAudioManager
         public bool IsMuted { get; set; }
 
         /// <summary>
-        /// Audio sources
-        /// </summary>
-        private AudioSource[] AudioSources
-        {
-            get
-            {
-                if (audioSources == null)
-                {
-                    audioSources = Array.Empty<AudioSource>();
-                }
-                return audioSources;
-            }
-        }
-
-        /// <summary>
         /// Volume
         /// </summary>
         public float Volume
         {
-            get
-            {
-                return ((AudioSources.Length > 0) ? AudioSources[0].volume : 0.0f);
-            }
+            get => (AudioSources.Count > 0) ? AudioSources[0].volume : 0.0f;
             set
             {
                 foreach (AudioSource audio_source in AudioSources)
@@ -68,10 +55,7 @@ namespace UnityAudioManager
         /// </summary>
         public bool Spatialize
         {
-            get
-            {
-                return ((AudioSources.Length > 0) ? AudioSources[0].spatialize : false);
-            }
+            get => (AudioSources.Count > 0) ? AudioSources[0].spatialize : false;
             set
             {
                 foreach (AudioSource audio_source in AudioSources)
@@ -89,10 +73,7 @@ namespace UnityAudioManager
         /// </summary>
         public float SpatialBlend
         {
-            get
-            {
-                return ((AudioSources.Length > 0) ? AudioSources[0].spatialBlend : 0.0f);
-            }
+            get => (AudioSources.Count > 0) ? AudioSources[0].spatialBlend : 0.0f;
             set
             {
                 foreach (AudioSource audio_source in AudioSources)
@@ -106,17 +87,24 @@ namespace UnityAudioManager
         }
 
         /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="audioSources">Audio sources</param>
+        private AudioGroup(AudioSource[] audioSources) => this.audioSources = audioSources;
+
+        /// <summary>
         /// Apply settings
         /// </summary>
         /// <param name="audioSettings">Audio settings</param>
-        public void ApplySettings(AudioSettingsData audioSettings)
+        public void ApplySettings(IAudioSettingsData audioSettings)
         {
-            if (audioSettings != null)
+            if (audioSettings == null)
             {
-                foreach (AudioSource audio_source in AudioSources)
-                {
-                    audioSettings.ApplySettings(audio_source);
-                }
+                throw new ArgumentNullException(nameof(audioSettings));
+            }
+            foreach (AudioSource audio_source in AudioSources)
+            {
+                audioSettings.ApplySettings(audio_source);
             }
         }
 
@@ -126,32 +114,23 @@ namespace UnityAudioManager
         /// <param name="clip"></param>
         public void Play(AudioClip clip)
         {
-            if (AudioSources.Length > 0)
+            if (AudioSources.Count > 0)
             {
-                AudioSource audio_source = AudioSources[currentSoundsIndex];
+                AudioSource audio_source = AudioSources[(int)CurrentSoundsIndex];
                 if (audio_source != null)
                 {
                     audio_source.clip = clip;
                     if (!IsMuted)
                     {
                         audio_source.Play();
-                        ++currentSoundsIndex;
+                        ++CurrentSoundsIndex;
                     }
-                    if (currentSoundsIndex >= AudioSources.Length)
+                    if (CurrentSoundsIndex >= AudioSources.Count)
                     {
-                        currentSoundsIndex = 0U;
+                        CurrentSoundsIndex = 0U;
                     }
                 }
             }
-        }
-
-        /// <summary>
-        /// Constructor
-        /// </summary>
-        /// <param name="audioSources">Audio sources</param>
-        private AudioGroup(AudioSource[] audioSources)
-        {
-            this.audioSources = audioSources;
         }
 
         /// <summary>
@@ -161,10 +140,14 @@ namespace UnityAudioManager
         /// <param name="soundChannelCount">Sound channel count</param>
         /// <param name="audioSettings">Audio settings</param>
         /// <returns>Audio group if successful, otherwise "null"</returns>
-        public static AudioGroup CreateAudioGroup(GameObject gameObject, uint soundChannelCount, AudioSettingsData audioSettings)
+        public static AudioGroup CreateAudioGroup(GameObject gameObject, uint soundChannelCount, IAudioSettingsData audioSettings)
         {
+            if (!gameObject)
+            {
+                throw new ArgumentNullException(nameof(gameObject));
+            }
             AudioGroup ret = null;
-            if ((gameObject != null) && (soundChannelCount > 0U))
+            if (soundChannelCount > 0U)
             {
                 AudioSource[] audio_sources = new AudioSource[soundChannelCount];
                 for (uint i = 0U; i != soundChannelCount; i++)
@@ -187,9 +170,6 @@ namespace UnityAudioManager
         /// <param name="gameObject">Game object</param>
         /// <param name="soundChannelCount">Sound channel count</param>
         /// <returns>Audio group if successful, otherwise "null"</returns>
-        public static AudioGroup CreateAudioGroup(GameObject gameObject, uint soundChannelCount)
-        {
-            return CreateAudioGroup(gameObject, soundChannelCount, null);
-        }
+        public static AudioGroup CreateAudioGroup(GameObject gameObject, uint soundChannelCount) => CreateAudioGroup(gameObject, soundChannelCount, null);
     }
 }

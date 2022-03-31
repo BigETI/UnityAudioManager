@@ -11,7 +11,7 @@ namespace UnityAudioManager.Data
     /// Audio settings data
     /// </summary>
     [Serializable]
-    public class AudioSettingsData
+    public class AudioSettingsData : IAudioSettingsData
     {
         /// <summary>
         /// Audio clip
@@ -134,6 +134,101 @@ namespace UnityAudioManager.Data
         /// </summary>
         [SerializeField]
         private float maxDistance = 500.0f;
+
+        /// <summary>
+        /// Audio clip
+        /// </summary>
+        public AudioClip AudioClip => audioClip;
+
+        /// <summary>
+        /// Output
+        /// </summary>
+        public AudioMixerGroup Output => output;
+
+        /// <summary>
+        /// Mute
+        /// </summary>
+        public bool Mute => mute;
+
+        /// <summary>
+        /// Bypass effects
+        /// </summary>
+        public bool BypassEffects => bypassEffects;
+
+        /// <summary>
+        /// Bypass listener effects
+        /// </summary>
+        public bool BypassListenerEffects => bypassListenerEffects;
+
+        /// <summary>
+        /// Bypass reverb zones
+        /// </summary>
+        public bool BypassReverbZones => bypassReverbZones;
+
+        /// <summary>
+        /// Play on awake
+        /// </summary>
+        public bool PlayOnAwake => playOnAwake;
+
+        /// <summary>
+        /// Loop
+        /// </summary>
+        public bool Loop => loop;
+
+        /// <summary>
+        /// Priority
+        /// </summary>
+        public int Priority => priority;
+
+        /// <summary>
+        /// Volume
+        /// </summary>
+        public float Volume => volume;
+
+        /// <summary>
+        /// Pitch
+        /// </summary>
+        public float Pitch => pitch;
+
+        /// <summary>
+        /// Stereo pan
+        /// </summary>
+        public float StereoPan => stereoPan;
+
+        /// <summary>
+        /// Spatial blend
+        /// </summary>
+        public float SpatialBlend => spatialBlend;
+
+        /// <summary>
+        /// Reverb zone mix
+        /// </summary>
+        public float ReverbZoneMix => reverbZoneMix;
+
+        /// <summary>
+        /// Doppler level
+        /// </summary>
+        public float DopplerLevel => dopplerLevel;
+
+        /// <summary>
+        /// Spread
+        /// </summary>
+        public float Spread => spread;
+
+        /// <summary>
+        /// Volume roloff
+        /// </summary>
+        public AudioRolloffMode VolumeRolloff => volumeRolloff;
+
+        /// <summary>
+        /// Minimum distance
+        /// </summary>
+        public float MinDistance => minDistance;
+
+        /// <summary>
+        /// Maximum distance
+        /// </summary>
+        public float MaxDistance => maxDistance;
 
         /// <summary>
         /// Apply settings

@@ -1,5 +1,4 @@
 ﻿using System;
-using UnityAudioManager.Data;
 using UnityAudioManager.Managers;
 using UnityAudioManager.Objects;
 using UnityEngine;
@@ -17,12 +16,12 @@ namespace UnityAudioManager
         /// <summary>
         /// Playlist
         /// </summary>
-        public static MusicTitleData[] Playlist
+        public static IMusicTitleData[] Playlist
         {
-            get => ((AudioManagerScript.Instance == null) ? Array.Empty<MusicTitleData>() : AudioManagerScript.Instance.Playlist);
+            get => AudioManagerScript.Instance ? AudioManagerScript.Instance.Playlist : Array.Empty<IMusicTitleData>();
             set
             {
-                if (AudioManagerScript.Instance != null)
+                if (AudioManagerScript.Instance)
                 {
                     AudioManagerScript.Instance.Playlist = value;
                 }
@@ -32,22 +31,22 @@ namespace UnityAudioManager
         /// <summary>
         /// Music audio source
         /// </summary>
-        public static AudioSource MusicAudioSource => ((AudioManagerScript.Instance == null) ? null : AudioManagerScript.Instance.MusicAudioSource);
+        public static AudioSource MusicAudioSource => AudioManagerScript.Instance ? AudioManagerScript.Instance.MusicAudioSource : null;
 
         /// <summary>
         /// Sound effects
         /// </summary>
-        public static AudioGroup SoundEffectsAudioGroup => ((AudioManagerScript.Instance == null) ? null : AudioManagerScript.Instance.SoundEffectsAudioGroup);
+        public static IAudioGroup SoundEffectsAudioGroup => AudioManagerScript.Instance ? AudioManagerScript.Instance.SoundEffectsAudioGroup : null;
 
         /// <summary>
         /// Is muted
         /// </summary>
         public static bool IsMuted
         {
-            get => ((AudioManagerScript.Instance == null) ? true : AudioManagerScript.Instance.IsMuted);
+            get => !AudioManagerScript.Instance || AudioManagerScript.Instance.IsMuted;
             set
             {
-                if (AudioManagerScript.Instance != null)
+                if (AudioManagerScript.Instance)
                 {
                     AudioManagerScript.Instance.IsMuted = value;
                 }
@@ -59,10 +58,10 @@ namespace UnityAudioManager
         /// </summary>
         public static float MusicVolume
         {
-            get => ((AudioManagerScript.Instance == null) ? 0.0f : AudioManagerScript.Instance.MusicVolume);
+            get => AudioManagerScript.Instance ? AudioManagerScript.Instance.MusicVolume : 0.0f;
             set
             {
-                if (AudioManagerScript.Instance != null)
+                if (AudioManagerScript.Instance)
                 {
                     AudioManagerScript.Instance.MusicVolume = value;
                 }
@@ -74,10 +73,10 @@ namespace UnityAudioManager
         /// </summary>
         public static float SoundEffectsVolume
         {
-            get => ((AudioManagerScript.Instance == null) ? 0.0f : AudioManagerScript.Instance.SoundEffectsVolume);
+            get => AudioManagerScript.Instance ? AudioManagerScript.Instance.SoundEffectsVolume : 0.0f;
             set
             {
-                if (AudioManagerScript.Instance != null)
+                if (AudioManagerScript.Instance)
                 {
                     AudioManagerScript.Instance.SoundEffectsVolume = value;
                 }
@@ -87,7 +86,7 @@ namespace UnityAudioManager
         /// <summary>
         /// Resources path
         /// </summary>
-        public static string ResourcesPath => ((AudioManagerScript.Instance == null) ? "MusicTitles" : AudioManagerScript.Instance.ResourcesPath);
+        public static string ResourcesPath => AudioManagerScript.Instance ? AudioManagerScript.Instance.ResourcesPath : "MusicTitles";
 
         /// <summary>
         /// Music time
@@ -95,10 +94,10 @@ namespace UnityAudioManager
         /// <remarks>This property is inconsistent, if audio is compressed!</remarks>
         public static float MusicTime
         {
-            get => ((AudioManagerScript.Instance == null) ? 0.0f : AudioManagerScript.Instance.MusicTime);
+            get => AudioManagerScript.Instance ? AudioManagerScript.Instance.MusicTime : 0.0f;
             set
             {
-                if (AudioManagerScript.Instance != null)
+                if (AudioManagerScript.Instance)
                 {
                     AudioManagerScript.Instance.MusicTime = value;
                 }
@@ -111,10 +110,10 @@ namespace UnityAudioManager
         /// <remarks>This property is inconsistent, if audio is compressed!</remarks>
         public static int MusicTimeSamples
         {
-            get => ((AudioManagerScript.Instance == null) ? 0 : AudioManagerScript.Instance.MusicTimeSamples);
+            get => AudioManagerScript.Instance ? AudioManagerScript.Instance.MusicTimeSamples : 0;
             set
             {
-                if (AudioManagerScript.Instance != null)
+                if (AudioManagerScript.Instance)
                 {
                     AudioManagerScript.Instance.MusicTimeSamples = value;
                 }
@@ -124,29 +123,29 @@ namespace UnityAudioManager
         /// <summary>
         /// Music frequency
         /// </summary>
-        public static int MusicFrequency => ((AudioManagerScript.Instance == null) ? 0 : AudioManagerScript.Instance.MusicFrequency);
+        public static int MusicFrequency => AudioManagerScript.Instance ? AudioManagerScript.Instance.MusicFrequency : 0;
 
         /// <summary>
         /// Music audio clip samples
         /// </summary>
-        public static int MusicAudioClipSamples => ((AudioManagerScript.Instance == null) ? 0 : AudioManagerScript.Instance.MusicAudioClipSamples);
+        public static int MusicAudioClipSamples => (AudioManagerScript.Instance) ? AudioManagerScript.Instance.MusicAudioClipSamples : 0;
 
         /// <summary>
         /// Music audio clip
         /// </summary>
-        public static AudioClip MusicAudioClip => ((AudioManagerScript.Instance == null) ? null : AudioManagerScript.Instance.MusicAudioClip);
+        public static AudioClip MusicAudioClip => AudioManagerScript.Instance ? AudioManagerScript.Instance.MusicAudioClip : null;
 
         /// <summary>
         /// Is playing music
         /// </summary>
-        public static bool IsPlayingMusic => ((AudioManagerScript.Instance == null) ? false : AudioManagerScript.Instance.IsPlayingMusic);
+        public static bool IsPlayingMusic => AudioManagerScript.Instance && AudioManagerScript.Instance.IsPlayingMusic;
 
         /// <summary>
         /// Play next music
         /// </summary>
         public static void PlayNextMusic()
         {
-            if (AudioManagerScript.Instance != null)
+            if (AudioManagerScript.Instance)
             {
                 AudioManagerScript.Instance.PlayNextMusic();
             }
@@ -155,12 +154,16 @@ namespace UnityAudioManager
         /// <summary>
         /// Play sound effect
         /// </summary>
-        /// <param name="clip"></param>
-        public static void PlaySoundEffect(AudioClip clip)
+        /// <param name="soundEffectAudioClip">Sound effect audio clip</param>
+        public static void PlaySoundEffect(AudioClip soundEffectAudioClip)
         {
-            if (AudioManagerScript.Instance != null)
+            if (!soundEffectAudioClip)
             {
-                AudioManagerScript.Instance.PlaySoundEffect(clip);
+                throw new ArgumentNullException(nameof(soundEffectAudioClip));
+            }
+            if (AudioManagerScript.Instance)
+            {
+                AudioManagerScript.Instance.PlaySoundEffect(soundEffectAudioClip);
             }
         }
 
@@ -168,9 +171,13 @@ namespace UnityAudioManager
         /// Play music
         /// </summary>
         /// <param name="musicTitle">Music title</param>
-        public static void PlayMusic(MusicTitleData musicTitle)
+        public static void PlayMusic(IMusicTitleData musicTitle)
         {
-            if (AudioManagerScript.Instance != null)
+            if (musicTitle == null)
+            {
+                throw new ArgumentNullException(nameof(musicTitle));
+            }
+            if (AudioManagerScript.Instance)
             {
                 AudioManagerScript.Instance.PlayMusic(musicTitle);
             }
@@ -182,7 +189,11 @@ namespace UnityAudioManager
         /// <param name="musicTitle">Music title</param>
         public static void PlayMusic(MusicTitleObjectScript musicTitle)
         {
-            if (AudioManagerScript.Instance != null)
+            if (!musicTitle)
+            {
+                throw new ArgumentNullException(nameof(musicTitle));
+            }
+            if (AudioManagerScript.Instance)
             {
                 AudioManagerScript.Instance.PlayMusic(musicTitle);
             }
@@ -191,12 +202,16 @@ namespace UnityAudioManager
         /// <summary>
         /// Play music
         /// </summary>
-        /// <param name="audioClip">Audio clip</param>
-        public static void PlayMusic(AudioClip audioClip)
+        /// <param name="musicAudioClip">Music audio clip</param>
+        public static void PlayMusic(AudioClip musicAudioClip)
         {
-            if (AudioManagerScript.Instance != null)
+            if (!musicAudioClip)
             {
-                AudioManagerScript.Instance.PlayMusic(audioClip);
+                throw new ArgumentNullException(nameof(musicAudioClip));
+            }
+            if (AudioManagerScript.Instance)
+            {
+                AudioManagerScript.Instance.PlayMusic(musicAudioClip);
             }
         }
 
@@ -205,9 +220,13 @@ namespace UnityAudioManager
         /// </summary>
         /// <param name="musicTitle">Music title</param>
         /// <param name="delay">Delay</param>
-        public static void PlayMusicDelayed(MusicTitleData musicTitle, float delay)
+        public static void PlayMusicDelayed(IMusicTitleData musicTitle, float delay)
         {
-            if (AudioManagerScript.Instance != null)
+            if (musicTitle == null)
+            {
+                throw new ArgumentNullException(nameof(musicTitle));
+            }
+            if (AudioManagerScript.Instance)
             {
                 AudioManagerScript.Instance.PlayMusicDelayed(musicTitle, delay);
             }
@@ -220,7 +239,11 @@ namespace UnityAudioManager
         /// <param name="delay">Delay</param>
         public static void PlayMusicDelayed(MusicTitleObjectScript musicTitle, float delay)
         {
-            if (AudioManagerScript.Instance != null)
+            if (!musicTitle)
+            {
+                throw new ArgumentNullException(nameof(musicTitle));
+            }
+            if (AudioManagerScript.Instance)
             {
                 AudioManagerScript.Instance.PlayMusicDelayed(musicTitle, delay);
             }
@@ -229,13 +252,17 @@ namespace UnityAudioManager
         /// <summary>
         /// Play music delayed
         /// </summary>
-        /// <param name="audioClip">Audio clip</param>
+        /// <param name="musicAudioClip">Music audio clip</param>
         /// <param name="delay">Delay</param>
-        public static void PlayMusicDelayed(AudioClip audioClip, float delay)
+        public static void PlayMusicDelayed(AudioClip musicAudioClip, float delay)
         {
-            if (AudioManagerScript.Instance != null)
+            if (!musicAudioClip)
             {
-                AudioManagerScript.Instance.PlayMusicDelayed(audioClip, delay);
+                throw new ArgumentNullException(nameof(musicAudioClip));
+            }
+            if (AudioManagerScript.Instance)
+            {
+                AudioManagerScript.Instance.PlayMusicDelayed(musicAudioClip, delay);
             }
         }
 
@@ -244,7 +271,7 @@ namespace UnityAudioManager
         /// </summary>
         public static void ReplayMusic()
         {
-            if (AudioManagerScript.Instance != null)
+            if (AudioManagerScript.Instance)
             {
                 AudioManagerScript.Instance.ReplayMusic();
             }
@@ -255,7 +282,7 @@ namespace UnityAudioManager
         /// </summary>
         public static void StopMusic()
         {
-            if (AudioManagerScript.Instance != null)
+            if (AudioManagerScript.Instance)
             {
                 AudioManagerScript.Instance.StopMusic();
             }
@@ -266,7 +293,7 @@ namespace UnityAudioManager
         /// </summary>
         public static void ShufflePlaylist()
         {
-            if (AudioManagerScript.Instance != null)
+            if (AudioManagerScript.Instance)
             {
                 AudioManagerScript.Instance.ShufflePlaylist();
             }
@@ -278,7 +305,11 @@ namespace UnityAudioManager
         /// <param name="path">Path</param>
         public static void LoadPlaylistFromResources(string path)
         {
-            if (AudioManagerScript.Instance != null)
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                throw new ArgumentNullException(nameof(path));
+            }
+            if (AudioManagerScript.Instance)
             {
                 AudioManagerScript.Instance.LoadPlaylistFromResources(path);
             }

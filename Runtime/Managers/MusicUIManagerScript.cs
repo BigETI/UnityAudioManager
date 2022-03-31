@@ -1,6 +1,6 @@
-﻿using UnityAudioManager.Data;
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.UI;
+using UnityPatterns.Managers;
 
 /// <summary>
 /// Unity audio manager managers namespace
@@ -8,9 +8,9 @@ using UnityEngine.UI;
 namespace UnityAudioManager.Managers
 {
     /// <summary>
-    /// Music UI controller script class
+    /// A class that describes a music UI manager script
     /// </summary>
-    public class MusicUIManagerScript : MonoBehaviour
+    public class MusicUIManagerScript : AManagerScript<MusicUIManagerScript>, IMusicUIManager
     {
         /// <summary>
         /// Default icon sprite
@@ -49,33 +49,28 @@ namespace UnityAudioManager.Managers
         private Animator panelAnimator = default;
 
         /// <summary>
-        /// Instance
-        /// </summary>
-        public static MusicUIManagerScript Instance { get; private set; }
-
-        /// <summary>
         /// Show play
         /// </summary>
         /// <param name="musicTitle">Music title</param>
-        public void ShowPlay(MusicTitleData musicTitle)
+        public void ShowPlay(IMusicTitleData musicTitle)
         {
-            if (titleText != null)
+            if (titleText)
             {
                 titleText.text = musicTitle.Title;
             }
-            if (descriptionText != null)
+            if (descriptionText)
             {
                 descriptionText.text = musicTitle.Description;
             }
-            if (authorText != null)
+            if (authorText)
             {
                 authorText.text = musicTitle.Author;
             }
-            if (iconImage != null)
+            if (iconImage)
             {
                 iconImage.sprite = ((musicTitle.IconSprite == null) ? defaultIconSprite : musicTitle.IconSprite);
             }
-            if (panelAnimator != null)
+            if (panelAnimator)
             {
                 panelAnimator.Play("Show");
             }
@@ -86,25 +81,9 @@ namespace UnityAudioManager.Managers
         /// </summary>
         public void HidePlay()
         {
-            if (panelAnimator != null)
+            if (panelAnimator)
             {
                 panelAnimator.Play("Idle");
-            }
-        }
-
-        /// <summary>
-        /// Awake
-        /// </summary>
-        private void Awake()
-        {
-            if (Instance == null)
-            {
-                Instance = this;
-                DontDestroyOnLoad(gameObject);
-            }
-            else
-            {
-                Destroy(gameObject);
             }
         }
     }

@@ -1,13 +1,12 @@
 {
-    "name": "com.bigeti.audio-manager",
-    "version": "1.0.0",
+    "name": "com.bigeti.audiomanager",
+    "version": "1.1.0",
     "displayName": "Audio Manager for Unity",
     "description": "This package contains an audio manager and utility functionalities for the audio system in Unity.",
     "dependencies": {},
     "keywords": [
-        "selection",
-        "cursor",
-        "selectioncursor"
+        "audio",
+        "manager"
     ],
     "author": {
         "name": "Ethem Kurt",

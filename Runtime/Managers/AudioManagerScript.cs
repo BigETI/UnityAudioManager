@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using UnityAudioManager.Data;
 using UnityAudioManager.Objects;
 using UnityEngine;
+using UnityEngine.Serialization;
+using UnityPatterns.Managers;
 #if UNITY_ANALYTICS
 using UnityEngine.Analytics;
 #endif
@@ -15,19 +17,25 @@ namespace UnityAudioManager.Managers
     /// <summary>
     /// Audio manager script class
     /// </summary>
-    public class AudioManagerScript : MonoBehaviour
+    public class AudioManagerScript : AManagerScript<AudioManagerScript>, IAudioManager
     {
+        /// <summary>
+        /// Default resources path
+        /// </summary>
+        private static readonly string defaultResourcesPath = "MusicTitles";
+
         /// <summary>
         /// Sound channel count
         /// </summary>
         [SerializeField]
+        [Min(1)]
         private uint soundChannelCount = 8;
 
         /// <summary>
         /// Resources path
         /// </summary>
         [SerializeField]
-        private string resourcesPath = "MusicTitles";
+        private string resourcesPath = defaultResourcesPath;
 
         /// <summary>
         /// Is muted
@@ -36,22 +44,25 @@ namespace UnityAudioManager.Managers
         private bool isMuted = default;
 
         /// <summary>
-        /// Start muted if game runs in mobile
+        /// Is starting muted if game runs in mobile
         /// </summary>
         [SerializeField]
-        private bool startMutedIfMobile = default;
+        [FormerlySerializedAs("startMutedIfMobile")]
+        private bool isStartingMutedIfMobile = default;
 
         /// <summary>
-        /// Load playlist from resources
+        /// Is loading playlist from resources
         /// </summary>
         [SerializeField]
-        private bool loadPlaylistFromResources = true;
+        [FormerlySerializedAs("loadPlaylistFromResources")]
+        private bool isLoadingPlaylistFromResources = true;
 
         /// <summary>
-        /// Anlayze music audio clip samples
+        /// Is anlayzing music audio clip samples
         /// </summary>
         [SerializeField]
-        private bool analyzeMusicAudioClipSamples = default;
+        [FormerlySerializedAs("analyzeMusicAudioClipSamples")]
+        private bool isAnalyzingMusicAudioClipSamples = default;
 
         /// <summary>
         /// Music audio settings
@@ -71,19 +82,14 @@ namespace UnityAudioManager.Managers
         private uint currentPlaylistIndex;
 
         /// <summary>
-        /// Current sounds index
+        /// Is game paused
         /// </summary>
-        private uint currentSoundsIndex;
-
-        /// <summary>
-        /// Game paused
-        /// </summary>
-        private bool gamePaused;
+        private bool isGamePaused;
 
         /// <summary>
         /// Playlist
         /// </summary>
-        private MusicTitleData[] playlist;
+        private IMusicTitleData[] playlist;
 
         /// <summary>
         /// Analyze music audio source
@@ -111,74 +117,21 @@ namespace UnityAudioManager.Managers
         private long analyzeMusicDenominator;
 
         /// <summary>
-        /// Instance
+        /// Sound channel count
         /// </summary>
-        private static AudioManagerScript instance;
-
-        /// <summary>
-        /// Playlist
-        /// </summary>
-        public MusicTitleData[] Playlist
+        public uint SoundChannelCount
         {
-            get
-            {
-                if (playlist == null)
-                {
-                    playlist = Array.Empty<MusicTitleData>();
-                }
-                return playlist;
-            }
-            set
-            {
-                if (value != null)
-                {
-                    bool is_playing_music = IsPlayingMusic;
-                    List<MusicTitleData> list = new List<MusicTitleData>();
-                    foreach (MusicTitleData music_title in value)
-                    {
-                        if (music_title != null)
-                        {
-                            list.Add(new MusicTitleData(music_title));
-                        }
-                    }
-                    if (is_playing_music)
-                    {
-                        IsMuted = true;
-                    }
-                    playlist = list.ToArray();
-                    list.Clear();
-                    if (is_playing_music)
-                    {
-                        IsMuted = false;
-                    }
-                    currentPlaylistIndex = 0U;
-                }
-            }
+            get => soundChannelCount;
+            set => soundChannelCount = (uint)Mathf.Max((int)value, 1);
         }
-
-        /// <summary>
-        /// Music audio source
-        /// </summary>
-        public AudioSource MusicAudioSource { get; private set; }
-
-        /// <summary>
-        /// Sound effects
-        /// </summary>
-        public AudioGroup SoundEffectsAudioGroup { get; private set; }
 
         /// <summary>
         /// Resources path
         /// </summary>
         public string ResourcesPath
         {
-            get
-            {
-                if (resourcesPath == null)
-                {
-                    resourcesPath = "MusicTitles";
-                }
-                return resourcesPath;
-            }
+            get => string.IsNullOrWhiteSpace(resourcesPath) ? defaultResourcesPath : resourcesPath;
+            set => resourcesPath = value ?? throw new ArgumentNullException(nameof(value));
         }
 
         /// <summary>
@@ -186,10 +139,7 @@ namespace UnityAudioManager.Managers
         /// </summary>
         public bool IsMuted
         {
-            get
-            {
-                return isMuted;
-            }
+            get => isMuted;
             set
             {
                 if (isMuted != value)
@@ -197,11 +147,11 @@ namespace UnityAudioManager.Managers
                     isMuted = value;
                     if (isMuted)
                     {
-                        if (MusicAudioSource != null)
+                        if (MusicAudioSource)
                         {
                             MusicAudioSource.Stop();
                         }
-                        if (MusicUIManagerScript.Instance != null)
+                        if (MusicUIManagerScript.Instance)
                         {
                             MusicUIManagerScript.Instance.HidePlay();
                         }
@@ -225,44 +175,93 @@ namespace UnityAudioManager.Managers
         }
 
         /// <summary>
+        /// Is starting muted if game runs in mobile
+        /// </summary>
+        public bool IsStartingMutedIfMobile
+        {
+            get => isStartingMutedIfMobile;
+            set => isStartingMutedIfMobile = value;
+        }
+
+        /// <summary>
+        /// Is loading playlist from resources
+        /// </summary>
+        public bool IsLoadingPlaylistFromResources
+        {
+            get => isLoadingPlaylistFromResources;
+            set => isLoadingPlaylistFromResources = value;
+        }
+
+        /// <summary>
+        /// Is anlayzing music audio clip samples
+        /// </summary>
+        public bool IsAnalyzingMusicAudioClipSamples
+        {
+            get => isAnalyzingMusicAudioClipSamples;
+            set => isAnalyzingMusicAudioClipSamples = value;
+        }
+
+        /// <summary>
         /// Music audio settings
         /// </summary>
-        private AudioSettingsData MusicAudioSettings
-        {
-            get
-            {
-                if (musicAudioSettings == null)
-                {
-                    musicAudioSettings = new AudioSettingsData();
-                }
-                return musicAudioSettings;
-            }
-        }
+        public IAudioSettingsData MusicAudioSettings => musicAudioSettings ??= new AudioSettingsData();
 
         /// <summary>
         /// Sound effects audio settings
         /// </summary>
-        private AudioSettingsData SoundEffectsAudioSettings
+        public IAudioSettingsData SoundEffectsAudioSettings => soundEffectsAudioSettings ??= new AudioSettingsData();
+
+        /// <summary>
+        /// Playlist
+        /// </summary>
+        public IMusicTitleData[] Playlist
         {
-            get
+            get => playlist ?? Array.Empty<IMusicTitleData>();
+            set
             {
-                if (soundEffectsAudioSettings == null)
+                if (value == null)
                 {
-                    soundEffectsAudioSettings = new AudioSettingsData();
+                    throw new ArgumentNullException(nameof(value));
                 }
-                return soundEffectsAudioSettings;
+                bool is_playing_music = IsPlayingMusic;
+                List<MusicTitleData> list = new List<MusicTitleData>();
+                foreach (MusicTitleData music_title in value)
+                {
+                    if (music_title != null)
+                    {
+                        list.Add(new MusicTitleData(music_title));
+                    }
+                }
+                if (is_playing_music)
+                {
+                    IsMuted = true;
+                }
+                playlist = list.ToArray();
+                list.Clear();
+                if (is_playing_music)
+                {
+                    IsMuted = false;
+                }
+                currentPlaylistIndex = 0U;
             }
         }
+
+        /// <summary>
+        /// Music audio source
+        /// </summary>
+        public AudioSource MusicAudioSource { get; private set; }
+
+        /// <summary>
+        /// Sound effects
+        /// </summary>
+        public IAudioGroup SoundEffectsAudioGroup { get; private set; }
 
         /// <summary>
         /// Music volume
         /// </summary>
         public float MusicVolume
         {
-            get
-            {
-                return ((MusicAudioSource == null) ? 0.0f : MusicAudioSource.volume);
-            }
+            get => (MusicAudioSource == null) ? 0.0f : MusicAudioSource.volume;
             set
             {
                 if (MusicAudioSource != null)
@@ -277,10 +276,7 @@ namespace UnityAudioManager.Managers
         /// </summary>
         public float SoundEffectsVolume
         {
-            get
-            {
-                return ((SoundEffectsAudioGroup == null) ? 0.0f : SoundEffectsAudioGroup.Volume);
-            }
+            get => (SoundEffectsAudioGroup == null) ? 0.0f : SoundEffectsAudioGroup.Volume;
             set
             {
                 if (SoundEffectsAudioGroup != null)
@@ -293,13 +289,7 @@ namespace UnityAudioManager.Managers
         /// <summary>
         /// Is playing music
         /// </summary>
-        public bool IsPlayingMusic
-        {
-            get
-            {
-                return ((MusicAudioSource == null) ? false : MusicAudioSource.isPlaying);
-            }
-        }
+        public bool IsPlayingMusic => MusicAudioSource && MusicAudioSource.isPlaying;
 
         /// <summary>
         /// Music time
@@ -307,15 +297,12 @@ namespace UnityAudioManager.Managers
         /// <remarks>This property is inconsistent, if audio is compressed!</remarks>
         public float MusicTime
         {
-            get
-            {
-                return ((MusicAudioSource == null) ? 0.0f : ((MusicAudioSource.clip == null) ? 0.0f : MusicAudioSource.time));
-            }
+            get => (MusicAudioSource && MusicAudioSource.clip) ? MusicAudioSource.time : 0.0f;
             set
             {
-                if (MusicAudioSource != null)
+                if (MusicAudioSource)
                 {
-                    MusicAudioSource.time = Mathf.Clamp(value, 0.0f, ((MusicAudioClip == null) ? 0.0f : Mathf.Max(0.0f, MusicAudioClip.length - 0.01f)));
+                    MusicAudioSource.time = Mathf.Clamp(value, 0.0f, MusicAudioClip ? Mathf.Max(0.0f, MusicAudioClip.length - 0.01f) : 0.0f);
                 }
             }
         }
@@ -326,15 +313,12 @@ namespace UnityAudioManager.Managers
         /// <remarks>This property is inconsistent, if audio is compressed!</remarks>
         public int MusicTimeSamples
         {
-            get
-            {
-                return ((MusicAudioSource == null) ? 0 : ((MusicAudioSource.clip == null) ? 0 : MusicAudioSource.timeSamples));
-            }
+            get => (MusicAudioSource && MusicAudioSource.clip) ? MusicAudioSource.timeSamples : 0;
             set
             {
-                if (MusicAudioSource != null)
+                if (MusicAudioSource)
                 {
-                    MusicAudioSource.timeSamples = ((MusicAudioClip == null) ? 0 : Mathf.Max(0, value - 1));
+                    MusicAudioSource.timeSamples = MusicAudioClip ? Mathf.Max(0, value - 1) : 0;
                 }
             }
         }
@@ -342,34 +326,19 @@ namespace UnityAudioManager.Managers
         /// <summary>
         /// Music frequency
         /// </summary>
-        public int MusicFrequency
-        {
-            get
-            {
-                return ((MusicAudioSource == null) ? 1 : ((MusicAudioSource.clip == null) ? 1 : MusicAudioSource.clip.frequency));
-            }
-        }
+        public int MusicFrequency => (MusicAudioSource && MusicAudioSource.clip) ? MusicAudioSource.clip.frequency : 1;
 
         /// <summary>
         /// Music audio clip samples
         /// </summary>
-        public int MusicAudioClipSamples
-        {
-            get
-            {
-                return ((analyzeMusicAudioClipSamples) ? musicAudioClipSamples : ((MusicAudioClip == null) ? 0 : MusicAudioClip.samples));
-            }
-        }
+        public int MusicAudioClipSamples => isAnalyzingMusicAudioClipSamples ? musicAudioClipSamples : (MusicAudioClip ? MusicAudioClip.samples : 0);
 
         /// <summary>
         /// Music audio clip
         /// </summary>
         public AudioClip MusicAudioClip
         {
-            get
-            {
-                return ((MusicAudioSource == null) ? null : MusicAudioSource.clip);
-            }
+            get => MusicAudioSource ? MusicAudioSource.clip : null;
             private set
             {
                 if (MusicAudioSource != null)
@@ -390,24 +359,35 @@ namespace UnityAudioManager.Managers
         }
 
         /// <summary>
-        /// Instance
+        /// Shuffles collection
         /// </summary>
-        public static AudioManagerScript Instance
+        /// <typeparam name="T">Type</typeparam>
+        /// <param name="collection">Collection</param>
+        /// <returns>Shuffled array</returns>
+        private static T[] Shuffle<T>(IEnumerable<T> collection)
         {
-            get
+            List<T> list = new List<T>(collection);
+            int n = list.Count;
+            while (n > 1)
             {
-                return instance;
+                int k = UnityEngine.Random.Range(0, n--);
+                T temp = list[n];
+                list[n] = list[k];
+                list[k] = temp;
             }
+            T[] ret = list.ToArray();
+            list.Clear();
+            return ret;
         }
 
         /// <summary>
-        /// Play current music
+        /// Plays current music
         /// </summary>
         private void PlayCurrentMusic()
         {
-            if ((Playlist.Length > 0) && (MusicAudioSource != null))
+            if ((Playlist.Length > 0) && MusicAudioSource)
             {
-                MusicTitleData music_title = Playlist[currentPlaylistIndex];
+                IMusicTitleData music_title = Playlist[currentPlaylistIndex];
                 MusicAudioClip = music_title.AudioClip;
                 if (!isMuted)
                 {
@@ -422,7 +402,7 @@ namespace UnityAudioManager.Managers
         }
 
         /// <summary>
-        /// Play next music
+        /// Plays next music
         /// </summary>
         public void PlayNextMusic()
         {
@@ -438,24 +418,22 @@ namespace UnityAudioManager.Managers
         }
 
         /// <summary>
-        /// Play sound effect
+        /// Plays sound effect
         /// </summary>
-        /// <param name="clip"></param>
-        public void PlaySoundEffect(AudioClip clip)
-        {
-            if (SoundEffectsAudioGroup != null)
-            {
-                SoundEffectsAudioGroup.Play(clip);
-            }
-        }
+        /// <param name="soundEffectAudioClip">Sound effect audio clip</param>
+        public void PlaySoundEffect(AudioClip soundEffectAudioClip) => SoundEffectsAudioGroup?.Play(soundEffectAudioClip);
 
         /// <summary>
-        /// Play music
+        /// Plays music
         /// </summary>
         /// <param name="musicTitle">Music title</param>
-        public void PlayMusic(MusicTitleData musicTitle)
+        public void PlayMusic(IMusicTitleData musicTitle)
         {
-            if ((musicTitle != null) && (MusicAudioSource != null))
+            if (musicTitle == null)
+            {
+                throw new ArgumentNullException(nameof(musicTitle));
+            }
+            if (MusicAudioSource)
             {
                 MusicAudioClip = musicTitle.AudioClip;
                 if (!isMuted)
@@ -471,26 +449,31 @@ namespace UnityAudioManager.Managers
         }
 
         /// <summary>
-        /// Play music
+        /// Plays music
         /// </summary>
         /// <param name="musicTitle">Music title</param>
         public void PlayMusic(MusicTitleObjectScript musicTitle)
         {
-            if (musicTitle != null)
+            if (!musicTitle)
             {
-                PlayMusic(new MusicTitleData(musicTitle, ResourcesPath));
+                throw new ArgumentNullException(nameof(musicTitle));
             }
+            PlayMusic(new MusicTitleData(musicTitle, ResourcesPath));
         }
 
         /// <summary>
-        /// Play music
+        /// Plays music
         /// </summary>
-        /// <param name="audioClip">Audio clip</param>
-        public void PlayMusic(AudioClip audioClip)
+        /// <param name="musicAudioClip">Music audio clip</param>
+        public void PlayMusic(AudioClip musicAudioClip)
         {
-            if ((audioClip != null) && (MusicAudioSource != null))
+            if (!musicAudioClip)
             {
-                MusicAudioClip = audioClip;
+                throw new ArgumentNullException(nameof(musicAudioClip));
+            }
+            if (MusicAudioSource)
+            {
+                MusicAudioClip = musicAudioClip;
                 if (!isMuted)
                 {
                     MusicAudioSource.timeSamples = 0;
@@ -500,14 +483,18 @@ namespace UnityAudioManager.Managers
         }
 
         /// <summary>
-        /// Play music delayed
+        /// Plays music delayed
         /// </summary>
         /// <param name="musicTitle">Music title</param>
-        /// <param name="delay">Delay</param>
-        public void PlayMusicDelayed(MusicTitleData musicTitle, float delay)
+        /// <param name="delayTime">Delay time</param>
+        public void PlayMusicDelayed(IMusicTitleData musicTitle, float delayTime)
         {
-            float d = Mathf.Max(delay, 0.0f);
-            if ((musicTitle != null) && (MusicAudioSource != null))
+            if (musicTitle == null)
+            {
+                throw new ArgumentNullException(nameof(musicTitle));
+            }
+            float d = Mathf.Max(delayTime, 0.0f);
+            if (MusicAudioSource)
             {
                 MusicAudioClip = musicTitle.AudioClip;
                 if (!isMuted)
@@ -522,29 +509,37 @@ namespace UnityAudioManager.Managers
         }
 
         /// <summary>
-        /// Play music delayed
+        /// Plays music delayed
         /// </summary>
         /// <param name="musicTitle">Music title</param>
-        /// <param name="delay">Delay</param>
-        public void PlayMusicDelayed(MusicTitleObjectScript musicTitle, float delay)
+        /// <param name="delayTime">Delay time</param>
+        public void PlayMusicDelayed(MusicTitleObjectScript musicTitle, float delayTime)
         {
+            if (!musicTitle)
+            {
+                throw new ArgumentNullException(nameof(musicTitle));
+            }
             if (musicTitle != null)
             {
-                PlayMusicDelayed(new MusicTitleData(musicTitle, ResourcesPath), delay);
+                PlayMusicDelayed(new MusicTitleData(musicTitle, ResourcesPath), delayTime);
             }
         }
 
         /// <summary>
-        /// Play music
+        /// Plays music
         /// </summary>
-        /// <param name="audioClip">Audio clip</param>
-        /// <param name="delay">Delay</param>
-        public void PlayMusicDelayed(AudioClip audioClip, float delay)
+        /// <param name="musicAudioClip">Music audio clip</param>
+        /// <param name="delayTime">Delay time</param>
+        public void PlayMusicDelayed(AudioClip musicAudioClip, float delayTime)
         {
-            float d = Mathf.Max(0.0f, delay);
-            if ((audioClip != null) && (MusicAudioSource != null))
+            if (!musicAudioClip)
             {
-                MusicAudioClip = audioClip;
+                throw new ArgumentNullException(nameof(musicAudioClip));
+            }
+            float d = Mathf.Max(0.0f, delayTime);
+            if (MusicAudioSource)
+            {
+                MusicAudioClip = musicAudioClip;
                 if (!isMuted)
                 {
                     MusicAudioSource.timeSamples = 0;
@@ -554,11 +549,11 @@ namespace UnityAudioManager.Managers
         }
 
         /// <summary>
-        /// Replay music
+        /// Replays music
         /// </summary>
         public void ReplayMusic()
         {
-            if (MusicAudioSource != null)
+            if (MusicAudioSource)
             {
                 MusicAudioSource.Stop();
                 MusicAudioSource.Play();
@@ -566,46 +561,23 @@ namespace UnityAudioManager.Managers
         }
 
         /// <summary>
-        /// Stop music
+        /// Stops music
         /// </summary>
         public void StopMusic()
         {
-            if (MusicAudioSource != null)
+            if (MusicAudioSource)
             {
                 MusicAudioSource.Stop();
             }
         }
 
         /// <summary>
-        /// Shuffle
+        /// Shuffles playlist
         /// </summary>
-        /// <typeparam name="T">Type</typeparam>
-        /// <param name="collection">Collection</param>
-        /// <returns>Shuffled array</returns>
-        private static T[] Shuffle<T>(IEnumerable<T> collection)
-        {
-            List<T> ret = new List<T>(collection);
-            int n = ret.Count;
-            while (n > 1)
-            {
-                int k = UnityEngine.Random.Range(0, n--);
-                T temp = ret[n];
-                ret[n] = ret[k];
-                ret[k] = temp;
-            }
-            return ret.ToArray();
-        }
+        public void ShufflePlaylist() => Playlist = Shuffle(Playlist);
 
         /// <summary>
-        /// Shuffle playlist
-        /// </summary>
-        public void ShufflePlaylist()
-        {
-            Playlist = Shuffle(Playlist);
-        }
-
-        /// <summary>
-        /// Load playlist from resources
+        /// Loads playlist from resources
         /// </summary>
         /// <param name="path">Path</param>
         public void LoadPlaylistFromResources(string path)
@@ -613,7 +585,7 @@ namespace UnityAudioManager.Managers
             MusicTitleObjectScript[] playlist_objects = Resources.LoadAll<MusicTitleObjectScript>(path);
             if (playlist_objects != null)
             {
-                MusicTitleData[] playlist = new MusicTitleData[playlist_objects.Length];
+                IMusicTitleData[] playlist = new IMusicTitleData[playlist_objects.Length];
                 for (int i = 0; i < playlist.Length; i++)
                 {
                     playlist[i] = new MusicTitleData(playlist_objects[i], path);
@@ -622,50 +594,38 @@ namespace UnityAudioManager.Managers
             }
             else
             {
-                Playlist = Array.Empty<MusicTitleData>();
+                Playlist = Array.Empty<IMusicTitleData>();
             }
         }
 
         /// <summary>
         /// Load playlist from resources
         /// </summary>
-        public void LoadPlaylistFromResources()
-        {
-            LoadPlaylistFromResources(ResourcesPath);
-        }
+        public void LoadPlaylistFromResources() => LoadPlaylistFromResources(ResourcesPath);
 
         /// <summary>
-        /// Awake
+        /// Gets invoked when script has been initialized
         /// </summary>
-        private void Awake()
+        protected virtual void Awake()
         {
-            if (instance == null)
+            if (isStartingMutedIfMobile)
             {
-                instance = this;
-                DontDestroyOnLoad(gameObject);
-            }
-            else
-            {
-                Destroy(gameObject);
-            }
-            if (startMutedIfMobile)
-            {
-                isMuted = (SystemInfo.deviceType == DeviceType.Handheld);
+                isMuted = SystemInfo.deviceType == DeviceType.Handheld;
             }
         }
 
         /// <summary>
-        /// Start
+        /// Gets invoked when script has been started
         /// </summary>
-        private void Start()
+        protected virtual void Start()
         {
-            if (loadPlaylistFromResources)
+            if (isLoadingPlaylistFromResources)
             {
                 LoadPlaylistFromResources();
             }
             MusicAudioSource = gameObject.AddComponent<AudioSource>();
             MusicAudioSettings.ApplySettings(MusicAudioSource);
-            if (analyzeMusicAudioClipSamples)
+            if (isAnalyzingMusicAudioClipSamples)
             {
                 analyzeMusicAudioSource = gameObject.AddComponent<AudioSource>();
                 MusicAudioSettings.ApplySettings(analyzeMusicAudioSource);
@@ -680,13 +640,13 @@ namespace UnityAudioManager.Managers
         }
 
         /// <summary>
-        /// Update
+        /// Gets invoked when script performs a frame update
         /// </summary>
-        private void Update()
+        protected virtual void Update()
         {
             if (!isMuted)
             {
-                if ((!gamePaused) && (!IsPlayingMusic))
+                if (!isGamePaused && !IsPlayingMusic)
                 {
                     PlayNextMusic();
                 }
@@ -736,12 +696,9 @@ namespace UnityAudioManager.Managers
         }
 
         /// <summary>
-        /// On application pause
+        /// Gets invoked when application changes pause state
         /// </summary>
         /// <param name="pause">Pause</param>
-        private void OnApplicationPause(bool pause)
-        {
-            gamePaused = pause;
-        }
+        protected virtual void OnApplicationPause(bool pause) => isGamePaused = pause;
     }
 }

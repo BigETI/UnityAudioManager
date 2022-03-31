@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using UnityPatterns.Objects;
 
 /// <summary>
 /// Unity audio manager objects namespace
@@ -6,10 +7,10 @@
 namespace UnityAudioManager.Objects
 {
     /// <summary>
-    /// Music title object script class
+    /// A class that describes a music title object script
     /// </summary>
     [CreateAssetMenu(fileName = "MusicTitle", menuName = "Audio manager/Music title")]
-    public class MusicTitleObjectScript : ScriptableObject
+    public class MusicTitleObjectScript : AObjectScript, IMusicTitleObject
     {
         /// <summary>
         /// Audio clip
@@ -50,47 +51,17 @@ namespace UnityAudioManager.Objects
         /// <summary>
         /// Title
         /// </summary>
-        public string Title
-        {
-            get
-            {
-                if (title == null)
-                {
-                    title = string.Empty;
-                }
-                return title;
-            }
-        }
+        public string Title => title ?? string.Empty;
 
         /// <summary>
         /// Description
         /// </summary>
-        public string Description
-        {
-            get
-            {
-                if (description == null)
-                {
-                    description = string.Empty;
-                }
-                return description;
-            }
-        }
+        public string Description => description ?? string.Empty;
 
         /// <summary>
         /// Author
         /// </summary>
-        public string Author
-        {
-            get
-            {
-                if (author == null)
-                {
-                    author = string.Empty;
-                }
-                return author;
-            }
-        }
+        public string Author => author ?? string.Empty;
 
         /// <summary>
         /// Icon sprite

@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using UnityAudioManager.Data;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.Serialization;
 using UnityEngine.UI;
+using UnityPatterns.Controllers;
 
 /// <summary>
 /// Unity audio manager controllers namespace
@@ -11,27 +13,29 @@ using UnityEngine.UI;
 namespace UnityAudioManager.Controllers
 {
     /// <summary>
-    /// UI sound effects controller script class
+    /// A class that describes an UI sound effects controller script
     /// </summary>
     [RequireComponent(typeof(EventTrigger))]
-    public class UISoundEffectsControllerScript : MonoBehaviour
+    public class UISoundEffectsControllerScript : AControllerScript, IUISoundEffectsController
     {
         /// <summary>
-        /// Randomize sound selection
+        /// Is randomizing sound selection
         /// </summary>
         [SerializeField]
-        private bool randomizeSoundSelection = default;
+        [FormerlySerializedAs("randomizeSoundSelection")]
+        private bool isRandomizingSoundSelection;
 
         /// <summary>
-        /// Sound effects
+        /// UI sound effects
         /// </summary>
         [SerializeField]
-        private UISoundEffectData[] soundEffects = default;
+        [FormerlySerializedAs("soundEffects")]
+        private UISoundEffectData[] uiSoundEffects = default;
 
         /// <summary>
-        /// Sound effects dictionary
+        /// Sound effects lookup
         /// </summary>
-        private Dictionary<EEventTriggerType, List<AudioClip>> soundEffectsDictionary;
+        private Dictionary<EEventTriggerType, IReadOnlyList<AudioClip>> soundEffectsLookup;
 
         /// <summary>
         /// Toggle fix
@@ -39,52 +43,62 @@ namespace UnityAudioManager.Controllers
         private bool toggleFix;
 
         /// <summary>
-        /// Sound effects
+        /// Is randomizing sound selection
         /// </summary>
-        private UISoundEffectData[] SoundEffects
+        public bool IsRandomizingSoundSelection
         {
-            get
+            get => isRandomizingSoundSelection;
+            set => isRandomizingSoundSelection = value;
+        }
+
+        /// <summary>
+        /// UI sound effects
+        /// </summary>
+        public UISoundEffectData[] UISoundEffects
+        {
+            get => uiSoundEffects ?? Array.Empty<UISoundEffectData>();
+            set
             {
-                if (soundEffects == null)
+                if (value == null)
                 {
-                    soundEffects = Array.Empty<UISoundEffectData>();
+                    throw new ArgumentNullException(nameof(value));
                 }
-                return soundEffects;
+                uiSoundEffects = (UISoundEffectData[])value.Clone();
             }
         }
 
         /// <summary>
-        /// Sound effects dictionary
+        /// Sound effects lookup
         /// </summary>
-        private Dictionary<EEventTriggerType, List<AudioClip>> SoundEffectsDictionary
+        public IReadOnlyDictionary<EEventTriggerType, IReadOnlyList<AudioClip>> SoundEffectsLookup
         {
             get
             {
-                if (soundEffectsDictionary == null)
+                if (soundEffectsLookup == null)
                 {
-                    soundEffectsDictionary = new Dictionary<EEventTriggerType, List<AudioClip>>();
-                    foreach (UISoundEffectData sound_effect in SoundEffects)
+                    soundEffectsLookup = new Dictionary<EEventTriggerType, IReadOnlyList<AudioClip>>();
+                    foreach (UISoundEffectData sound_effect in UISoundEffects)
                     {
                         if (sound_effect != null)
                         {
                             if (sound_effect.SoundEffectAudioClip != null)
                             {
                                 List<AudioClip> audio_clips = null;
-                                if (soundEffectsDictionary.ContainsKey(sound_effect.EventTriggerType))
+                                if (soundEffectsLookup.ContainsKey(sound_effect.EventTriggerType))
                                 {
-                                    audio_clips = soundEffectsDictionary[sound_effect.EventTriggerType];
+                                    audio_clips = (List<AudioClip>)soundEffectsLookup[sound_effect.EventTriggerType];
                                 }
                                 else
                                 {
                                     audio_clips = new List<AudioClip>();
-                                    soundEffectsDictionary.Add(sound_effect.EventTriggerType, audio_clips);
+                                    soundEffectsLookup.Add(sound_effect.EventTriggerType, audio_clips);
                                 }
                                 audio_clips.Add(sound_effect.SoundEffectAudioClip);
                             }
                         }
                     }
                 }
-                return soundEffectsDictionary;
+                return soundEffectsLookup;
             }
         }
 
@@ -94,11 +108,11 @@ namespace UnityAudioManager.Controllers
         /// <param name="eventTriggerType">Event trigger type</param>
         private void TriggerEvent(EEventTriggerType eventTriggerType)
         {
-            if (SoundEffectsDictionary.ContainsKey(eventTriggerType))
+            if (SoundEffectsLookup.ContainsKey(eventTriggerType))
             {
-                if (randomizeSoundSelection)
+                if (isRandomizingSoundSelection)
                 {
-                    List<AudioClip> audio_clips = SoundEffectsDictionary[eventTriggerType];
+                    IReadOnlyList<AudioClip> audio_clips = SoundEffectsLookup[eventTriggerType];
                     if (audio_clips.Count > 0)
                     {
                         AudioManager.PlaySoundEffect(audio_clips[UnityEngine.Random.Range(0, audio_clips.Count)]);
@@ -106,7 +120,7 @@ namespace UnityAudioManager.Controllers
                 }
                 else
                 {
-                    foreach (AudioClip audio_clip in SoundEffectsDictionary[eventTriggerType])
+                    foreach (AudioClip audio_clip in SoundEffectsLookup[eventTriggerType])
                     {
                         AudioManager.PlaySoundEffect(audio_clip);
                     }
@@ -117,7 +131,7 @@ namespace UnityAudioManager.Controllers
         /// <summary>
         /// Start
         /// </summary>
-        private void Start()
+        protected virtual void Start()
         {
             EventTrigger event_trigger = GetComponent<EventTrigger>();
             if (event_trigger != null)

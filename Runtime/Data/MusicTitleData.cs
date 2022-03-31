@@ -1,6 +1,7 @@
 ﻿using System;
 using UnityAudioManager.Objects;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 /// <summary>
 /// Unity audio manager data namespace
@@ -11,13 +12,14 @@ namespace UnityAudioManager.Data
     /// Music title data
     /// </summary>
     [Serializable]
-    public class MusicTitleData : IComparable<MusicTitleData>
+    public class MusicTitleData : IMusicTitleData
     {
         /// <summary>
-        /// Audio clip
+        /// Audio clip name
         /// </summary>
         [SerializeField]
-        private string audioClip;
+        [FormerlySerializedAs("audioClip")]
+        private string audioClipName;
 
         /// <summary>
         /// Title
@@ -62,71 +64,24 @@ namespace UnityAudioManager.Data
         private AudioClip audioClipObject;
 
         /// <summary>
-        /// Audio clip
+        /// Audio clip name
         /// </summary>
-        public AudioClip AudioClip
-        {
-            get
-            {
-                if (audioClipObject == null)
-                {
-                    if (audioClip == null)
-                    {
-                        audioClip = string.Empty;
-                    }
-                    if (isResource)
-                    {
-                        audioClipObject = Resources.Load<AudioClip>(audioClip);
-                    }
-                }
-                return audioClipObject;
-            }
-        }
+        public string AudioClipName => audioClipName ?? string.Empty;
 
         /// <summary>
         /// Title
         /// </summary>
-        public string Title
-        {
-            get
-            {
-                if (title == null)
-                {
-                    title = string.Empty;
-                }
-                return title;
-            }
-        }
+        public string Title => title ?? string.Empty;
 
         /// <summary>
         /// Description
         /// </summary>
-        public string Description
-        {
-            get
-            {
-                if (description == null)
-                {
-                    description = string.Empty;
-                }
-                return description;
-            }
-        }
+        public string Description => description ?? string.Empty;
 
         /// <summary>
         /// Author
         /// </summary>
-        public string Author
-        {
-            get
-            {
-                if (author == null)
-                {
-                    author = string.Empty;
-                }
-                return author;
-            }
-        }
+        public string Author => author ?? string.Empty;
 
         /// <summary>
         /// Icon sprite
@@ -134,22 +89,39 @@ namespace UnityAudioManager.Data
         public Sprite IconSprite => iconSprite;
 
         /// <summary>
+        /// Is resource
+        /// </summary>
+        public bool IsResource => isResource;
+
+        /// <summary>
+        /// Audio type
+        /// </summary>
+        public AudioType AudioType => audioType;
+
+        /// <summary>
+        /// Audio clip
+        /// </summary>
+        public AudioClip AudioClip =>
+            audioClipObject = ((audioClipObject == null) && isResource) ? Resources.Load<AudioClip>(AudioClipName) : audioClipObject;
+
+        /// <summary>
         /// Copy constructor
         /// </summary>
         /// <param name="musicTitle">Music title</param>
         public MusicTitleData(MusicTitleData musicTitle)
         {
-            if (musicTitle != null)
+            if (musicTitle == null)
             {
-                audioClip = musicTitle.audioClip;
-                audioClipObject = musicTitle.audioClipObject;
-                title = musicTitle.title;
-                description = musicTitle.description;
-                author = musicTitle.author;
-                iconSprite = musicTitle.iconSprite;
-                isResource = musicTitle.isResource;
-                audioType = musicTitle.audioType;
+                throw new ArgumentNullException(nameof(musicTitle));
             }
+            audioClipName = musicTitle.AudioClipName;
+            title = musicTitle.Title;
+            description = musicTitle.Description;
+            author = musicTitle.Author;
+            iconSprite = musicTitle.IconSprite;
+            isResource = musicTitle.isResource;
+            audioType = musicTitle.audioType;
+            audioClipObject = musicTitle.audioClipObject;
         }
 
         /// <summary>
@@ -159,17 +131,18 @@ namespace UnityAudioManager.Data
         /// <param name="resourcesPath">Resources path</param>
         public MusicTitleData(MusicTitleObjectScript musicTitle, string resourcesPath)
         {
-            if (musicTitle != null)
+            if (!musicTitle)
             {
-                audioClipObject = musicTitle.AudioClip;
-                audioClip = ((audioClipObject == null) ? string.Empty : (resourcesPath + "/" + audioClipObject.name));
-                title = musicTitle.Title;
-                description = musicTitle.Description;
-                author = musicTitle.Author;
-                iconSprite = musicTitle.IconSprite;
-                isResource = true;
-                audioType = AudioType.UNKNOWN;
+                throw new ArgumentNullException(nameof(musicTitle));
             }
+            audioClipObject = musicTitle.AudioClip;
+            audioClipName = audioClipObject ? $"{ resourcesPath }/{ audioClipObject.name }" : string.Empty;
+            title = musicTitle.Title;
+            description = musicTitle.Description;
+            author = musicTitle.Author;
+            iconSprite = musicTitle.IconSprite;
+            isResource = true;
+            audioType = AudioType.UNKNOWN;
         }
 
         /// <summary>
@@ -177,7 +150,7 @@ namespace UnityAudioManager.Data
         /// </summary>
         /// <param name="other">Other</param>
         /// <returns>Delta</returns>
-        public int CompareTo(MusicTitleData other)
+        public int CompareTo(IMusicTitleData other)
         {
             int ret = -1;
             if (other != null)
